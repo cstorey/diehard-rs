@@ -40,11 +40,10 @@ mod tests {
                     self.big = min(old.big + self.small, 5);
                     self.small -= self.big - old.big
                 }
-
                 Op::BigToSmall => {
                     let old = self.clone();
-                    self.big = min(old.big + self.small, 3);
-                    self.small -= self.small - old.small
+                    self.small = min(old.big + self.small, 3);
+                    self.big -= self.small - old.small
                 }
             }
         }

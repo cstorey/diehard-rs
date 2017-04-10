@@ -5,9 +5,7 @@ extern crate quickcheck;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use quickcheck::{Arbitrary, Gen};
-
+    use quickcheck::{Arbitrary, Gen, QuickCheck};
     use std::cmp::min;
 
     #[derive(Debug, Clone)]
@@ -27,20 +25,21 @@ mod tests {
     }
 
     impl State {
-        fn apply(&mut self, op: Op) {
+        fn apply(&mut self, op: &Op) {
             match op {
-                Op::FillSmallJug => {
+                &Op::FillSmallJug => {
                     self.small = 3;
                 }
-                Op::FillBigJug => self.big = 5,
-                Op::EmptySmallJug => self.small = 0,
-                Op::EmptyBigJug => self.big = 0,
-                Op::SmallToBig => {
+                &Op::FillBigJug => self.big = 5,
+                &Op::EmptySmallJug => self.small = 0,
+                &Op::EmptyBigJug => self.big = 0,
+                &Op::SmallToBig => {
                     let old = self.clone();
                     self.big = min(old.big + self.small, 5);
                     self.small -= self.big - old.big
                 }
-                Op::BigToSmall => {
+
+                &Op::BigToSmall => {
                     let old = self.clone();
                     self.small = min(old.big + self.small, 3);
                     self.big -= self.small - old.small
@@ -70,16 +69,23 @@ mod tests {
         }
     }
 
-    quickcheck! {
-        fn diehard(xs: Vec<Op>) -> bool {
+    #[test]
+    fn diehard() {
+        fn prop(xs: Vec<Op>) -> bool {
             // println!("{:?}", xs);
+            let mut sts = Vec::new();
             let mut st = State::default();
-            for o in xs {
+            for o in xs.iter() {
                 st.apply(o);
+                sts.push((o.clone(), st.clone()));
                 st.assert_invariants();
-                if st.finished() { return false; }
+                if st.finished() {
+                    println!("match: {:#?}", sts);
+                    return false;
+                }
             }
-            return true
+            return true;
         }
+        QuickCheck::new().tests(10000).quickcheck(prop as fn(Vec<Op>) -> bool);
     }
 }
